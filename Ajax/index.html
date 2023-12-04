@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo</title>
+    <link rel="icon" href="https://cdn.jim-nielsen.com/macos/1024/microsoft-to-do-2019-10-08.png" type="image/x-icon">
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #282c35;
+            color: #fff;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.light-mode {
+            background-color: #fff;
+            color: #333;
+        }
+
+        body.dark-mode {
+            background-color: #282c35;
+            color: #fff;
+        }
+
+        section {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1e2128;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        h1 {
+            color: #61fffb;
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #61fffb;
+        }
+
+        input,
+        checkbox,
+        button {
+            padding: 12px;
+            border: 1px solid #444; /* Изменен цвет рамки на темный */
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input[type="checkbox"] {
+            width: 24px;
+        }
+
+        button {
+            background-color: #61dafb;
+            color: #1e2128; /* Изменен цвет текста на темный */
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #4fa3d1; /* Темнее голубой для hover-эффекта */
+        }
+
+        .error {
+            color: red;
+            margin-top: 8px;
+        }
+
+
+        #tasks,
+        #done {
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .task {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f8f8f8;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-text {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+
+        .strikeout {
+            text-decoration: line-through;
+        }
+
+        .important {
+            color: #f00;
+            font-weight: bold;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+
+        #loader {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-top: -20px;
+            margin-left: -20px;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #e32d2d;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .modal-btn.cancel {
+            background-color: #6c757d;
+            margin-right: 10px;
+        }
+    </style>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="script.js"></script>
+</head>
+<body class="light-mode">
+    <section>
+        <h1>ToDo</h1>
+
+        <form id="taskForm">
+            <label for="userId">User:</label>
+            <select id="userId" required></select>
+
+
+            <label for="title">Name:</label>
+            <input type="text" id="title" required />
+
+            <label for="body">Description:</label>
+            <input type="text" id="body" required />
+
+            <label for="important">Important:</label>
+            <input type="checkbox" id="important" />
+
+            <button type="submit">Add/Edit</button>
+            <div class="error" id="userIdError"></div>
+        </form>
+
+        <div id="tasks"></div>
+
+        <div id="done">
+            <h3>Complete tasks</h3>
+        </div>
+        
+        <div id="loader" class="loader"></div>
+
+        <div class="theme-toggle" onclick="toggleTheme()">🌙</div>
+
+        <!-- Модальное окно подтверждения удаления -->
+        <div id="deleteModal" class="modal">
+            <div class="modal-content">
+                <p>Вы уверены, что хотите удалить этот важный пост?</p>
+                <button class="modal-btn" id="confirmDelete">Delete</button>
+                <button class="modal-btn cancel" id="cancelDelete">Cancel</button>
+            </div>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
